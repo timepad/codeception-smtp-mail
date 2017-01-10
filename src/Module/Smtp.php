@@ -19,7 +19,9 @@ class Smtp extends Module
     protected $config = [
         'username',
         'password',
-        'imap_path' => '{imap.gmail.com:993/imap/ssl}INBOX',
+        'imap_path' => 'imap.gmail.com',
+        'imap_port' => 993,
+        'imap_security' => "ssl",
         'wait_interval' => 1, //in seconds
         'retry_counts' => 3,
         'attachments_dir' => 'tests/_data',

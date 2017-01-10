@@ -32,8 +32,8 @@ class SMTPDriver
             'username' => $config['username'],
             'password' => $config['password'],
             'hostspec' => $config['imap_path'],
-            //'port' =>     $config['password'],
-            //'secure' => 'tls',
+            'port'     => $config['imap_port'],
+            'secure'   => $config['imap_security'],
         ));
 
         $this->mailbox = Horde_Imap_Client_Mailbox::get('INBOX');
