@@ -1,3 +1,7 @@
+### This fork
+
+This fork can be used as drop-in replacement and uses `Horde/Imap_Client` instead of `php-imap` extension
+
 ### Installation
 
 ``` bash

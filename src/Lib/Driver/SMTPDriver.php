@@ -2,15 +2,22 @@
 
 namespace Codeception\Lib\Driver;
 
-use PhpImap\IncomingMail;
-use PhpImap\Mailbox;
+use Horde_Imap_Client_Data_Fetch;
+use Horde_Imap_Client_Fetch_Results;
+use Horde_Imap_Client_Mailbox;
+use Horde_Imap_Client_Search_Query;
+use Horde_Imap_Client_Socket;
 
 /**
  * @author Ahmed Samy <ahmed.samy.cs@gmail.com>
+ *         artyfarty <dmitry@timepad.ru>
  */
 class SMTPDriver
 {
-    /** @var Mailbox */
+    /** @var Horde_Imap_Client_Socket */
+    private $socket;
+
+    /** @var  Horde_Imap_Client_Mailbox */
     private $mailbox;
 
     /** @var  int */
@@ -21,54 +28,51 @@ class SMTPDriver
 
     public function __construct($config)
     {
-        $this->mailbox = new Mailbox(
-            $config['imap_path'],
-            $config['username'],
-            $config['password'],
-            realpath($config['attachments_dir'])
-        );
+        $this->socket = new Horde_Imap_Client_Socket(array(
+            'username' => $config['username'],
+            'password' => $config['password'],
+            'hostspec' => $config['imap_path'],
+            //'port' =>     $config['password'],
+            //'secure' => 'tls',
+        ));
+
+        $this->mailbox = Horde_Imap_Client_Mailbox::get('INBOX');
 
         $this->numberOfRetries = $config['retry_counts'];
         $this->waitIntervalInSeconds = $config['wait_interval'];
     }
 
     /**
-     * @param $criteria
+     * @param Horde_Imap_Client_Search_Query $criteria
      *
-     * @return IncomingMail
      * @throws \Exception
+     * @return Horde_Imap_Client_Data_Fetch
      */
     public function getEmailBy($criteria)
     {
-        $mailIds = $this->search($criteria);
-        if (!$mailIds) {
-            throw new \Exception(sprintf("No email found with given criteria %s", $criteria));
-        }
-
-        $mailId = reset($mailIds);
-        $mail = $this->mailbox->getMail($mailId);
-
-        return $mail;
+        $this->getEmailsBy($criteria)->first();
     }
 
     /**
-     * @param $criteria
+     * @param Horde_Imap_Client_Search_Query $criteria
      *
-     * @return array
+     * @return Horde_Imap_Client_Fetch_Results
      * @throws \Exception
      */
     public function getEmailsBy($criteria)
     {
-        $mails = [];
-        $mailIds = $this->search($criteria);
-        if (!$mailIds) {
-            throw new \Exception(sprintf("No email found with given criteria %s", $criteria));
+        $searchResult = $this->search($criteria);
+
+        if (!$searchResult['count']){
+            throw new \Exception(sprintf("No emails found with given criteria %s", $criteria));
         }
 
-        foreach ($mailIds as $mailId) {
-            $mails[] = $this->mailbox->getMail($mailId);
+        $mailIds = $searchResult['match'];
 
-        }
+        $fq = new \Horde_Imap_Client_Fetch_Query();
+        $ids = new \Horde_Imap_Client_Ids($mailIds);
+
+        $mails = $this->socket->fetch($this->mailbox, $fq, ['ids' => $ids]);
 
         return $mails;
     }
@@ -80,27 +84,27 @@ class SMTPDriver
      */
     public function seeEmailBy($criteria)
     {
-        $mailsIds = $this->search($criteria);
+        $result = $this->search($criteria);
 
-        return !empty($mailsIds);
+        return !!$result['count'];
     }
 
     /**
-     * @param IncomingMail $mail
+     * @param Horde_Imap_Client_Data_Fetch $mail
      *
      * @return mixed
      */
-    public function getLinksByEmail(IncomingMail $mail)
+    public function getLinksByEmail($mail)
     {
         $matches = [];
 
-        preg_match_all('|href="([^\s"]+)|', $mail->textHtml, $matches);
+        preg_match_all('|href="([^\s"]+)|', $mail->getBodyText(), $matches);
 
         return $matches[1];
     }
 
     /**
-     * @param $criteria
+     * @param Horde_Imap_Client_Search_Query $criteria
      *
      * @return array
      */
@@ -114,7 +118,7 @@ class SMTPDriver
     }
 
     /**
-     * @param string $criteria
+     * @param Horde_Imap_Client_Search_Query $criteria
      * @param int    $numberOfRetries
      * @param int    $waitInterval
      *
@@ -125,11 +129,13 @@ class SMTPDriver
         $mailIds = [];
         while ($numberOfRetries > 0) {
             sleep($waitInterval);
-            $mailIds = $this->mailbox->searchMailBox($criteria);
-
-            if (!empty($mailIds)) {
+            
+            $result = $this->socket->search($this->mailbox, $criteria);
+            
+            if ($result['count']) {
                 break;
             }
+            
             $numberOfRetries--;
             codecept_debug("Failed to find the email, retrying ... ({$numberOfRetries}) trie(s) left");
         }

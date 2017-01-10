@@ -8,6 +8,7 @@ use PhpImap\IncomingMail;
 
 /**
  * @author Ahmed Samy <ahmed.samy.cs@gmail.com>
+ *         artyfarty <dmitry@timepad.ru>
  */
 class Smtp extends Module
 {
@@ -28,7 +29,7 @@ class Smtp extends Module
     /** @var  SMTPDriver */
     protected $driver;
 
-    /** @var  IncomingMail */
+    /** @var  Horde_Imap_Client_Data_Fetch */
     protected $mail;
 
     /**
@@ -36,11 +37,6 @@ class Smtp extends Module
      */
     public function _initialize()
     {
-        if (!function_exists('imap_search')) {
-            throw new \Exception(
-                "imap is not installed, check http://php.net/manual/en/imap.setup.php for more information"
-            );
-        }
         //pre-pending folder name to the path
         $this->config['attachments_dir'] = $this->config['attachments_dir'].'/mail_attachments';
         //clearing attachments
@@ -221,7 +217,7 @@ class Smtp extends Module
     }
 
     /**
-     * @return IncomingMail
+     * @return Horde_Imap_Client_Data_Fetch
      * @throws ModuleException
      */
     private function getCurrentMail()

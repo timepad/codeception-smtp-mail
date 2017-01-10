@@ -1,7 +1,7 @@
 {
-  "name": "ahmedsamy/codeception-smtp-mail",
-  "description": "Test emails in your Codeception acceptance tests",
-  "homepage": "https://github.com/AhmedSamy/codeception-smtp-mail",
+  "name": "timepad/codeception-smtp-mail",
+  "description": "Test emails in your Codeception acceptance tests. Uses Horde/Imap_Client instead of imap extension. Works with cyrillic.",
+  "homepage": "https://github.com/timepad/codeception-smtp-mail",
   "license": "MIT",
   "keywords": [
     "gmail",
@@ -10,19 +10,30 @@
     "php",
     "php unit"
   ],
+  "repositories": [
+      {
+          "type": "pear",
+          "url": "https://pear.horde.org"
+      }
+  ],
   "authors": [
     {
       "name": "Ahmed Samy",
       "email": "ahmed.samy.cs@gmail.com",
       "homepage": "http://www.ahmed-samy.com"
+    },
+    {
+      "name": "Dmitry Guzhov",
+      "email": "dmitry@timepad.ru",
+      "homepage": "http://timepad.ru/"
     }
   ],
-  "require": {
-    "php-imap/php-imap": "~2.0"
-  },
   "autoload": {
     "psr-4": {
       "Codeception\\": "src"
     }
+  },
+  "require": {
+      "pear-pear.horde.org/Horde_Imap_Client": "*"
   }
 }
